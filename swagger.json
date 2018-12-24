@@ -1,0 +1,149 @@
+{
+   "swagger": "2.0",
+   "info": {
+     "title": "API CHATBOT MSG",
+     "description": "base_url: http://51.38.234.54/api-messages",
+     "version": "1.0"
+   },
+   "produces": ["application/json"],
+  "consumes": ["application/json"],
+  "paths": {
+     "/conversation": {
+       "post": {
+         "x-swagger-router-controller": "bar",
+         "operationId": "1",
+         "description": "[Login 123](https://www.google.com)",
+         "parameters": [{
+           "name": "body",
+           "in": "body",
+           "required": true,
+           "schema": {
+             "$ref": "#/definitions/conversation"
+           }
+         }
+         ],
+         "responses": {
+           "200" : {
+             "description": "Success"
+           }
+         }
+       }
+     },
+     "/conversation/{uid}" :{
+       "get": {
+         "x-swagger-router-controller": "bar",
+         "operationId": "2",
+         "description": "[Login 123](https://www.google.com)",
+         "parameters": [{
+           "name": "uid",
+           "type" : "string",
+           "in": "path",
+           "required": true
+         }
+         ],
+         "responses": {
+           "200" : {
+             "description": "Success"
+           }
+         }
+       },
+       "delete": {
+         "x-swagger-router-controller": "bar",
+         "operationId": "3",
+         "description": "[Login 123](https://www.google.com)",
+         "parameters": [{
+           "name": "uid",
+           "type" : "string",
+           "in": "path",
+           "required": true
+         }
+         ],
+         "responses": {
+           "200" : {
+             "description": "Success"
+           }
+         }
+       }
+     },
+     "/message": {
+		"post": {
+		  "x-swagger-router-controller": "bar",
+		  "operationId": "4",
+		  "description": "",
+		  "responses": {},
+		  "parameters": [{
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/message"
+            },
+            "name": "body"
+          }
+          ]
+		}
+	  }
+   },
+  "definitions": {
+    "conversation" : {
+      "properties" : {
+        "members" : {
+          "type" : "array",
+          "items" : {
+            "type" : "string"
+          }
+        },
+        "conversation" : {
+          "type" : "object",
+          "allOf": [
+            {
+              "$ref": "#/definitions/conversationObj"
+            }
+          ]
+        }
+      }
+    },
+    "message" : {
+      "properties" : {
+        "uid" : {
+          "type" : "string"
+        },
+        "message" : {
+          "type" : "object",
+          "allOf": [
+            {
+              "$ref": "#/definitions/messageObj"
+            }
+          ]
+        }
+      }
+    },
+    "conversationObj": {
+      "type": "object",
+      "required": [
+        "uid"
+      ],
+      "properties": {
+        "uid": {
+          "type": "string"
+        }
+      }
+    },
+    "messageObj": {
+      "type": "object",
+      "required": [
+        "uid"
+      ],
+      "properties": {
+        "member": {
+          "type": "string"
+        },
+        "text" : {
+          "type": "string"
+        },
+        "date" : {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
