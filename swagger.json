@@ -134,6 +134,9 @@
         "uid"
       ],
       "properties": {
+        "type": {
+          "type": "string"
+        },
         "member": {
           "type": "string"
         },

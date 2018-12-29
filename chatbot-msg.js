@@ -71,10 +71,6 @@ app.post('/message', function (req, res) {
         var query = {
             'conversation.uid' : req.body.uid
         };
-        var update = {
-            $push : { "members" : {$each : "test"}
-            }
-        };
         res.setHeader('Content-Type', 'application/json; charset=UTF-8');
         db.collection('chatbot').findOneAndUpdate(query, {$push: {"conversation.messages" : req.body.message}}, function(err, result) {
             if (result.value != null) {
