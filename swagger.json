@@ -2,7 +2,7 @@
    "swagger": "2.0",
    "info": {
      "title": "API CHATBOT MSG",
-     "description": "base_url: http://51.38.234.54/api-messages",
+     "description": "base_url: http://51.38.234.54/api-chat",
      "version": "1.0"
    },
    "produces": ["application/json"],
@@ -27,18 +27,18 @@
              "description": "Success"
            }
          }
-       }
-     },
-     "/conversation/{uid}" :{
-       "get": {
+       },
+       "delete": {
          "x-swagger-router-controller": "bar",
-         "operationId": "2",
+         "operationId": "3",
          "description": "[Login 123](https://www.google.com)",
          "parameters": [{
-           "name": "uid",
-           "type" : "string",
-           "in": "path",
-           "required": true
+           "name": "body",
+           "in": "body",
+           "required": true,
+           "schema": {
+             "$ref": "#/definitions/conversationDelete"
+           }
          }
          ],
          "responses": {
@@ -46,10 +46,12 @@
              "description": "Success"
            }
          }
-       },
-       "delete": {
+       }
+     },
+     "/conversation/{uid}" :{
+       "get": {
          "x-swagger-router-controller": "bar",
-         "operationId": "3",
+         "operationId": "2",
          "description": "[Login 123](https://www.google.com)",
          "parameters": [{
            "name": "uid",
@@ -86,6 +88,9 @@
   "definitions": {
     "conversation" : {
       "properties" : {
+        "token" : {
+          "type" : "string"
+        },
         "members" : {
           "type" : "array",
           "items" : {
@@ -99,6 +104,16 @@
               "$ref": "#/definitions/conversationObj"
             }
           ]
+        }
+      }
+    },
+    "conversationDelete" : {
+      "properties" : {
+        "token" : {
+          "type" : "string"
+        },
+        "uid" : {
+          "type" : "string"
         }
       }
     },

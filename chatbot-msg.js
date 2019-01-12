@@ -33,11 +33,11 @@ app.get('/conversation/:uid', function (req, res) {
     })
 });
 
-app.delete('/conversation/:uid', function (req, res) {
+app.delete('/conversation/', function (req, res) {
     MongoClient.connect(url, function (err, client) {
         const db = client.db(dbName);
         var query = {
-            'conversation.uid': req.params.uid
+            'conversation.uid': req.body.uid
         };
         db.collection('chatbot').findOneAndDelete(query, function(err, result) {
             if (result.value != null) {
@@ -48,18 +48,34 @@ app.delete('/conversation/:uid', function (req, res) {
             }
             client.close();
         });
+        var query2 = {
+            token: req.body.token
+        };
+        db.collection('users').findOneAndUpdate(query2, {$pull: {"conversations" : req.body.uid}}, function (err, result) {
+            client.close();
+        });
     });
 });
 
 app.post('/conversation', function (req, res) {
     MongoClient.connect(url, function (err, client) {
         const db = client.db(dbName);
-        db.collection('chatbot').insertOne(req.body, function (err, result) {
+        var body = {
+            members: req.body.members,
+            conversation: req.body.conversation
+        };
+        db.collection('chatbot').insertOne(body, function (err, result) {
             if (result) {
                 res.send(JSON.stringify({"state": "success"}));
             } else {
                 res.send(JSON.stringify({"state": "error", "message": "insertion failed"}));
             }
+            client.close();
+        });
+        var query = {
+          token: req.body.token
+        };
+        db.collection('users').findOneAndUpdate(query, {$push: {"conversations" : req.body.conversation.uid}}, function (err, result) {
             client.close();
         });
     });
