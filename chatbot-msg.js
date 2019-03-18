@@ -5,6 +5,7 @@ var cors = require('cors');
 var app = express();
 var swaggerUi = require('swagger-ui-express');
 var swaggerDocument = require('./swagger.json');
+const {ObjectId} = require('mongodb'); // or ObjectID
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -60,24 +61,39 @@ app.delete('/conversation/', function (req, res) {
 app.post('/conversation', function (req, res) {
     MongoClient.connect(url, function (err, client) {
         const db = client.db(dbName);
-        var body = {
-            members: req.body.members,
-            conversation: req.body.conversation
+        var checkUid = {
+            'conversations' : req.body.conversation.uid,
+            token: req.body.token
         };
-        db.collection('chatbot').insertOne(body, function (err, result) {
+        db.collection('users').findOne(checkUid, function (err, result) {
             if (result) {
-                res.send(JSON.stringify({"state": "success"}));
+                res.send(JSON.stringify({"state": "error", "message": "uid already used"}));
             } else {
-                res.send(JSON.stringify({"state": "error", "message": "insertion failed"}));
+                var members = [
+                    ObjectId(req.body.members[0]),
+                    ObjectId(req.body.members[1]),
+                ];
+                var body = {
+                    members: members,
+                    conversation: req.body.conversation
+                };
+                db.collection('chatbot').insertOne(body, function (err, result) {
+                    if (result) {
+                        res.send(JSON.stringify({"state": "success"}));
+                    } else {
+                        res.send(JSON.stringify({"state": "error", "message": "insertion failed"}));
+                    }
+                    client.close();
+                });
+                var query = {
+                    token: req.body.token
+                };
+                db.collection('users').findOneAndUpdate(query, {$push: {"conversations" : req.body.conversation.uid}}, function (err, result) {
+                    client.close();
+                });
             }
-            client.close();
         });
-        var query = {
-          token: req.body.token
-        };
-        db.collection('users').findOneAndUpdate(query, {$push: {"conversations" : req.body.conversation.uid}}, function (err, result) {
-            client.close();
-        });
+
     });
 });
 
@@ -88,7 +104,13 @@ app.post('/message', function (req, res) {
             'conversation.uid' : req.body.uid
         };
         res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-        db.collection('chatbot').findOneAndUpdate(query, {$push: {"conversation.messages" : req.body.message}}, function(err, result) {
+        var message = {
+              "type" : req.body.message.type,
+              "member" : ObjectId(req.body.message.member),
+              "text" : req.body.message.text,
+              "date" : req.body.message.date
+        };
+        db.collection('chatbot').findOneAndUpdate(query, {$push: {"conversation.messages" : message}}, function(err, result) {
             if (result.value != null) {
                 res.send(JSON.stringify({"state": "success"}));
 
