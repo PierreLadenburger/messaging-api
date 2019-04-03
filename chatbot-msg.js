@@ -22,11 +22,12 @@ app.get('/conversation/:uid', function (req, res) {
         var query = {
             'conversation.uid' : req.params.uid
         };
-        db.collection('chatbot').findOne(query, function(err, result) {
-            if (result) {
-                res.send(JSON.stringify({"members" : result.members, "conversation" : result.conversation}));
+        db.collection('chatbot').findOneAndUpdate(query, {$set: { "conversation.messages.$[].read" : true}} ,{returnOriginal:false}, function(err, result) {
+            if (result.value != null) {
+                res.send(JSON.stringify({"members" : result.value.members, "conversation" : result.value.conversation}));
 
             } else {
+                console.log("là");
                 res.send(JSON.stringify({"state": "error"}));
             }
             client.close();
@@ -35,6 +36,7 @@ app.get('/conversation/:uid', function (req, res) {
 });
 
 app.delete('/conversation/', function (req, res) {
+    console.log(req);
     MongoClient.connect(url, function (err, client) {
         const db = client.db(dbName);
         var query = {
@@ -98,28 +100,80 @@ app.post('/conversation', function (req, res) {
 });
 
 app.post('/message', function (req, res) {
+    if (ObjectId.isValid(req.body.message.member) !== true) {
+        res.send(JSON.stringify({"state": "error"}));
+    } else {
+        MongoClient.connect(url, function(err, client) {
+            const db = client.db(dbName);
+            var query = {
+                'conversation.uid' : req.body.uid
+            };
+            res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+            var message = {
+                "type" : req.body.message.type,
+                "member" : ObjectId(req.body.message.member),
+                "text" : req.body.message.text,
+                "date" : req.body.message.date,
+                "read" : req.body.message.read
+            };
+            db.collection('chatbot').findOneAndUpdate(query, {$push: {"conversation.messages" : message}}, function(err, result) {
+                if (result.value != null) {
+                    res.send(JSON.stringify({"state": "success"}));
+
+                } else {
+                    res.send(JSON.stringify({"state" : "error", "message" : "bad uid"}));
+                }
+                client.close();
+            });
+        })
+    }
+});
+
+app.post('/retrieveMessages', function (req, res) {
     MongoClient.connect(url, function(err, client) {
         const db = client.db(dbName);
-        var query = {
-            'conversation.uid' : req.body.uid
-        };
         res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-        var message = {
-              "type" : req.body.message.type,
-              "member" : ObjectId(req.body.message.member),
-              "text" : req.body.message.text,
-              "date" : req.body.message.date
+        var query = {
+            'conversation.uid' : req.body.uid,
         };
-        db.collection('chatbot').findOneAndUpdate(query, {$push: {"conversation.messages" : message}}, function(err, result) {
-            if (result.value != null) {
-                res.send(JSON.stringify({"state": "success"}));
+        db.collection('chatbot').findOne(query, function(err, result) {
+            if (result) {
+                var messages = [];
+
+
+                for (var i = 0; i < result.conversation.messages.length; i++) {
+                    if (result.conversation.messages[i].read === false && result.conversation.messages[i].member.toString() !== req.body.member) {
+                        messages.push(result.conversation.messages[i]);
+                    }
+                }
+                res.send(JSON.stringify({"members" : result.members, "conversation" : {"uid" : req.params.uid, "messages" : messages}}));
 
             } else {
-                res.send(JSON.stringify({"state" : "error", "message" : "bad uid"}));
+                res.send(JSON.stringify({"state": "error"}));
             }
             client.close();
         });
     })
 });
+
+app.post('/updateMessages', function (req, res) {
+    MongoClient.connect(url, function(err, client) {
+        const db = client.db(dbName);
+        res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+        var query = {
+            'conversation.uid' : req.body.uid,
+        };
+        db.collection('chatbot').updateOne(query, {$set: { "conversation.messages.$[message].read" : true}}, { arrayFilters: [{ "message.member" : {$ne : ObjectId(req.body.member)}}]}, function(err, result) {
+            if (result) {
+                res.send(JSON.stringify({"state" : "success"}));
+
+            } else {
+                res.send(JSON.stringify({"state": "error"}));
+            }
+            client.close();
+        });
+    })
+});
+
 
 app.listen(8082);

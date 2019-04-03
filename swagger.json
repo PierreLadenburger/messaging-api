@@ -12,7 +12,7 @@
        "post": {
          "x-swagger-router-controller": "bar",
          "operationId": "1",
-         "description": "[Login 123](https://www.google.com)",
+         "description": "Créer une conversation",
          "parameters": [{
            "name": "body",
            "in": "body",
@@ -31,7 +31,7 @@
        "delete": {
          "x-swagger-router-controller": "bar",
          "operationId": "3",
-         "description": "[Login 123](https://www.google.com)",
+         "description": "Supprimer une conversation",
          "parameters": [{
            "name": "body",
            "in": "body",
@@ -52,7 +52,7 @@
        "get": {
          "x-swagger-router-controller": "bar",
          "operationId": "2",
-         "description": "[Login 123](https://www.google.com)",
+         "description": "Récupérer une conversation",
          "parameters": [{
            "name": "uid",
            "type" : "string",
@@ -71,7 +71,7 @@
 		"post": {
 		  "x-swagger-router-controller": "bar",
 		  "operationId": "4",
-		  "description": "",
+		  "description": "Envoyer un message",
 		  "responses": {},
 		  "parameters": [{
             "in": "body",
@@ -83,7 +83,41 @@
           }
           ]
 		}
-	  }
+	  },
+      "/retrieveMessages": {
+        "post": {
+          "x-swagger-router-controller": "bar",
+          "operationId": "5",
+          "description": "Récupérer les messages non lus d'une conversation",
+          "responses": {},
+          "parameters": [{
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/retrieveMessages"
+            },
+            "name": "body"
+          }
+          ]
+        }
+      },
+      "/updateMessages": {
+        "post": {
+          "x-swagger-router-controller": "bar",
+          "operationId": "6",
+          "description": "Mettre à jour les messages non lus d'une conversation",
+          "responses": {},
+          "parameters": [{
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/updateMessages"
+            },
+            "name": "body"
+          }
+          ]
+        }
+      }
    },
   "definitions": {
     "conversation" : {
@@ -129,6 +163,26 @@
               "$ref": "#/definitions/messageObj"
             }
           ]
+        }
+      }
+    },
+    "retrieveMessages" : {
+      "properties" : {
+        "uid" : {
+          "type" : "string"
+        },
+        "member" : {
+          "type" : "string"
+        }
+      }
+    },
+    "updateMessages" : {
+      "properties" : {
+        "uid" : {
+          "type" : "string"
+        },
+        "member" : {
+          "type" : "string"
         }
       }
     },
