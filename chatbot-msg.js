@@ -57,8 +57,15 @@ app.delete('/conversation/', function (req, res) {
         db.collection('users').findOneAndUpdate(query2, {$pull: {"conversations" : req.body.uid}}, function (err, result) {
             client.close();
         });
+        db.collection('doctors').findOneAndUpdate(query2, {$pull: {"conversations" : req.body.uid}}, function (err, result) {
+            client.close();
+        });
     });
 });
+
+function addConversationToUser($user_id) {
+
+}
 
 app.post('/conversation', function (req, res) {
     MongoClient.connect(url, function (err, client) {
@@ -87,10 +94,17 @@ app.post('/conversation', function (req, res) {
                     }
                     client.close();
                 });
-                var query = {
-                    token: req.body.token
+                var queryUser = {
+                    token: req.body.token,
+                    _id: ObjectId(req.body.members[1])
                 };
-                db.collection('users').findOneAndUpdate(query, {$push: {"conversations" : req.body.conversation.uid}}, function (err, result) {
+                db.collection('users').findOneAndUpdate(queryUser, {$push: {"conversations" : req.body.conversation.uid}}, function (err, result) {
+                    client.close();
+                });
+                var queryDoctor = {
+                    _id: ObjectId(req.body.members[0])
+                };
+                db.collection('doctors').findOneAndUpdate(queryDoctor, {$push: {"conversations" : req.body.conversation.uid}}, function (err, result) {
                     client.close();
                 });
             }
@@ -114,7 +128,7 @@ app.post('/message', function (req, res) {
                 "member" : ObjectId(req.body.message.member),
                 "text" : req.body.message.text,
                 "date" : req.body.message.date,
-                "read" : req.body.message.read
+                "read" : false
             };
             db.collection('chatbot').findOneAndUpdate(query, {$push: {"conversation.messages" : message}}, function(err, result) {
                 if (result.value != null) {
