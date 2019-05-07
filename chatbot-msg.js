@@ -84,7 +84,10 @@ app.post('/conversation', function (req, res) {
                 ];
                 var body = {
                     members: members,
-                    conversation: req.body.conversation
+                    conversation: {
+                        uid : req.body.conversation.uid,
+                        messages: []
+                    }
                 };
                 db.collection('chatbot').insertOne(body, function (err, result) {
                     if (result) {
@@ -123,13 +126,23 @@ app.post('/message', function (req, res) {
                 'conversation.uid' : req.body.uid
             };
             res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-            var message = {
-                "type" : req.body.message.type,
-                "member" : ObjectId(req.body.message.member),
-                "text" : req.body.message.text,
-                "date" : req.body.message.date,
-                "read" : false
-            };
+            if (req.body.member !== "000000000000000000000001") {
+                var message = {
+                    "type" : req.body.message.type,
+                    "member" : ObjectId(req.body.message.member),
+                    "text" : req.body.message.text,
+                    "date" : req.body.message.date,
+                    "read" : false
+                };
+            } else  {
+                var message = {
+                    "type" : req.body.message.type,
+                    "member" : ObjectId(req.body.message.member),
+                    "text" : req.body.message.text,
+                    "date" : req.body.message.date,
+                    "read" : true
+                };
+            }
             db.collection('chatbot').findOneAndUpdate(query, {$push: {"conversation.messages" : message}}, function(err, result) {
                 if (result.value != null) {
                     res.send(JSON.stringify({"state": "success"}));
