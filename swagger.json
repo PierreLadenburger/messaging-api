@@ -117,22 +117,56 @@
           }
           ]
         }
+      },
+      "/conversation/all/user": {
+        "post": {
+          "x-swagger-router-controller": "bar",
+          "operationId": "7",
+          "description": "Récupérer le dernier message de chacune des conversations d'un utilisateur",
+          "responses": {},
+          "parameters": [{
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lastMessages"
+            },
+            "name": "body"
+          }
+          ]
+        }
+      },
+      "/conversation/all/doctor": {
+        "post": {
+          "x-swagger-router-controller": "bar",
+          "operationId": "8",
+          "description": "Récupérer le dernier message de chacune des conversations d'un médecin",
+          "responses": {},
+          "parameters": [{
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lastMessages"
+            },
+            "name": "body"
+          }
+          ]
+        }
       }
    },
   "definitions": {
-    "conversation" : {
-      "properties" : {
-        "token" : {
-          "type" : "string"
+    "conversation": {
+      "properties": {
+        "token": {
+          "type": "string"
         },
-        "members" : {
-          "type" : "array",
-          "items" : {
-            "type" : "string"
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         },
-        "conversation" : {
-          "type" : "object",
+        "conversation": {
+          "type": "object",
           "allOf": [
             {
               "$ref": "#/definitions/conversationObj"
@@ -141,23 +175,23 @@
         }
       }
     },
-    "conversationDelete" : {
-      "properties" : {
-        "token" : {
-          "type" : "string"
+    "conversationDelete": {
+      "properties": {
+        "token": {
+          "type": "string"
         },
-        "uid" : {
-          "type" : "string"
+        "uid": {
+          "type": "string"
         }
       }
     },
-    "message" : {
-      "properties" : {
-        "uid" : {
-          "type" : "string"
+    "message": {
+      "properties": {
+        "uid": {
+          "type": "string"
         },
-        "message" : {
-          "type" : "object",
+        "message": {
+          "type": "object",
           "allOf": [
             {
               "$ref": "#/definitions/messageObj"
@@ -166,23 +200,23 @@
         }
       }
     },
-    "retrieveMessages" : {
-      "properties" : {
-        "uid" : {
-          "type" : "string"
+    "retrieveMessages": {
+      "properties": {
+        "uid": {
+          "type": "string"
         },
-        "member" : {
-          "type" : "string"
+        "member": {
+          "type": "string"
         }
       }
     },
-    "updateMessages" : {
-      "properties" : {
-        "uid" : {
-          "type" : "string"
+    "updateMessages": {
+      "properties": {
+        "uid": {
+          "type": "string"
         },
-        "member" : {
-          "type" : "string"
+        "member": {
+          "type": "string"
         }
       }
     },
@@ -209,10 +243,21 @@
         "member": {
           "type": "string"
         },
-        "text" : {
+        "text": {
           "type": "string"
         },
-        "date" : {
+        "date": {
+          "type": "string"
+        }
+      }
+    },
+    "lastMessages": {
+      "type": "object",
+      "required": [
+        "token"
+      ],
+      "properties": {
+        "token": {
           "type": "string"
         }
       }

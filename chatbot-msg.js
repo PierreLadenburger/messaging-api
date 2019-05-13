@@ -35,7 +35,7 @@ app.get('/conversation/:uid', function (req, res) {
     })
 });
 
-app.post('/conversation/all', function (req, res) {
+app.post('/conversation/all/user', function (req, res) {
     MongoClient.connect(url, function(err, client) {
         const db = client.db(dbName);
         res.setHeader('Content-Type', 'application/json; charset=UTF-8');
@@ -45,7 +45,7 @@ app.post('/conversation/all', function (req, res) {
         var arr = [];
         db.collection('users').findOne(query, function (err, result) {
             for (let i = 0; i < result.conversations.length; i++) {
-                arr.push({ "conversation.uid" :result.conversations[i] }) ;
+                arr.push({ "conversation.uid" : result.conversations[i] }) ;
             }
             db.collection('chatbot').aggregate([{
                 $project: {
@@ -61,35 +61,44 @@ app.post('/conversation/all', function (req, res) {
                 $or: arr
             } }
             ]).toArray(function(err, result) {
-                res.send(JSON.stringify(result));
+                res.send(JSON.stringify({"state" : "success", "lastMessages" : result}));
                 client.close();
             });
         })
     });
 });
 
-app.get('/conversation/last/:uid', function (req, res) {
+app.post('/conversation/all/doctor', function (req, res) {
     MongoClient.connect(url, function(err, client) {
         const db = client.db(dbName);
         res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-        db.collection('chatbot').aggregate([{
-            $project: {
-                "_id" : 0,
-                "conversation.messages": [{
-                    $arrayElemAt: [ "$conversation.messages", -1 ]
-                }],
-                "members" : 1,
-                'conversation.uid': 1 }
-                },            {
+        var query = {
+            'token': req.body.token
+        };
+        var arr = [];
+        db.collection('doctors').findOne(query, function (err, result) {
+            for (let i = 0; i < result.conversations.length; i++) {
+                arr.push({ "conversation.uid" : result.conversations[i] }) ;
+            }
+            db.collection('chatbot').aggregate([{
+                $project: {
+                    "_id" : 0,
+                    "conversation.messages": [{
+                        $arrayElemAt: [ "$conversation.messages", -1 ]
+                    }],
+                    "members" : 1,
+                    'conversation.uid': 1
+                }
+            },            {
                 $match: {
-                    "conversation.uid" : req.params.uid
+                    $or: arr
                 } }
-
-        ]).toArray(function(err, result) {
-            res.send(JSON.stringify(result[0]));
-            client.close();
-        });
-    })
+            ]).toArray(function(err, result) {
+                res.send(JSON.stringify({"state" : "success", "lastMessages" : result}));
+                client.close();
+            });
+        })
+    });
 });
 
 app.delete('/conversation/', function (req, res) {
