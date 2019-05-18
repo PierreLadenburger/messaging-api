@@ -15,6 +15,7 @@ const dbName = 'homedoc';
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+// A AMELIORER POTENTIELLEMENT AVEC READ = true uniquement pour les messages d'un utilisateur
 app.get('/conversation/:uid', function (req, res) {
     MongoClient.connect(url, function(err, client) {
         const db = client.db(dbName);
@@ -54,7 +55,8 @@ app.post('/conversation/all/user', function (req, res) {
                         $arrayElemAt: [ "$conversation.messages", -1 ]
                     }],
                     "members" : 1,
-                    'conversation.uid': 1
+                    'conversation.uid': 1,
+                    'conversation.unread' : { $size : {$filter : {"input" : "$conversation.messages", "cond" : { "$and" : [{ "$eq" :  [ "$$this.read", false ]},{ "$ne" :  [ "$$this.member", result._id ]}]}}}}
                 }
             },            {
             $match: {
