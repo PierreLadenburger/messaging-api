@@ -62,9 +62,9 @@ app.post('/conversation/all/user', function (req, res) {
             } }
             ]).toArray(function(err, result) {
                 res.send(JSON.stringify({"state" : "success", "lastMessages" : result}));
-                client.close();
             });
-        })
+            client.close();
+        });
     });
 });
 
@@ -77,6 +77,7 @@ app.post('/conversation/all/doctor', function (req, res) {
         };
         var arr = [];
         db.collection('doctors').findOne(query, function (err, result) {
+            console.log(result);
             for (let i = 0; i < result.conversations.length; i++) {
                 arr.push({ "conversation.uid" : result.conversations[i] }) ;
             }
@@ -95,13 +96,13 @@ app.post('/conversation/all/doctor', function (req, res) {
                 } }
             ]).toArray(function(err, result) {
                 res.send(JSON.stringify({"state" : "success", "lastMessages" : result}));
-                client.close();
             });
+            client.close();
         })
     });
 });
 
-app.delete('/conversation/', function (req, res) {
+app.delete('/conversation', function (req, res) {
     console.log(req);
     MongoClient.connect(url, function (err, client) {
         const db = client.db(dbName);
@@ -109,12 +110,16 @@ app.delete('/conversation/', function (req, res) {
             token: req.body.token
         };
         db.collection('users').findOneAndUpdate(query, {$pull: {"conversations" : req.body.uid}}, function (err, result) {
-            res.send(JSON.stringify({"state": "success"}));
-            client.close();
+            if (result.value != null) {
+                res.send(JSON.stringify({"state": "success"}));
+                client.close();
+            }
         });
         db.collection('doctors').findOneAndUpdate(query, {$pull: {"conversations" : req.body.uid}}, function (err, result) {
-            res.send(JSON.stringify({"state": "success"}));
-            client.close();
+            if (result.value != null) {
+                res.send(JSON.stringify({"state": "success"}));
+                client.close();
+            }
         });
     });
 });
