@@ -219,26 +219,24 @@ app.post('/retrieveMessages', function (req, res) {
     MongoClient.connect(url, function(err, client) {
         const db = client.db(dbName);
         res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-        var query = {
-            'conversation.uid' : req.body.uid,
-        };
-        db.collection('chatbot').findOne(query, function(err, result) {
-            if (result) {
-                var messages = [];
 
-
-                for (var i = 0; i < result.conversation.messages.length; i++) {
-                    if (result.conversation.messages[i].read === false && result.conversation.messages[i].member.toString() !== req.body.member) {
-                        messages.push(result.conversation.messages[i]);
-                    }
-                }
-                res.send(JSON.stringify({"members" : result.members, "conversation" : {"uid" : req.params.uid, "messages" : messages}}));
-
-            } else {
-                res.send(JSON.stringify({"state": "error"}));
+        db.collection('chatbot').aggregate([{
+            $project: {
+                "_id" : 0,
+                "conversation.messages": [{
+                    $filter: {"input" : "$conversation.messages", "cond" : { "$and" : [{ "$eq" :  [ "$$this.read", false ]},{ "$ne" :  [ "$$this.member", req.body._id ]}]}}
+                }],
+                "members" : 1,
+                'conversation.uid': 1
             }
-            client.close();
+        },            {
+            $match: {
+                'conversation.uid' : req.body.uid
+            } }
+        ]).toArray(function(err, result) {
+            res.send(JSON.stringify({"state" : "success", "lastMessages" : result}));
         });
+        client.close();
     })
 });
 
