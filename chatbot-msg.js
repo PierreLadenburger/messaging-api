@@ -45,26 +45,30 @@ app.post('/conversation/all/user', function (req, res) {
         };
         var arr = [];
         db.collection('users').findOne(query, function (err, result) {
-            for (let i = 0; i < result.conversations.length; i++) {
-                arr.push({ "conversation.uid" : result.conversations[i] }) ;
-            }
-            db.collection('chatbot').aggregate([{
-                $project: {
-                    "_id" : 0,
-                    "conversation.messages": [{
-                        $arrayElemAt: [ "$conversation.messages", -1 ]
-                    }],
-                    "members" : 1,
-                    'conversation.uid': 1,
-                    'conversation.unread' : { $size : {$filter : {"input" : "$conversation.messages", "cond" : { "$and" : [{ "$eq" :  [ "$$this.read", false ]},{ "$ne" :  [ "$$this.member", result._id ]}]}}}}
+            if (result != null) {
+                for (let i = 0; i < result.conversations.length; i++) {
+                    arr.push({ "conversation.uid" : result.conversations[i] }) ;
                 }
-            },            {
-            $match: {
-                $or: arr
-            } }
-            ]).toArray(function(err, result) {
-                res.send(JSON.stringify({"state" : "success", "lastMessages" : result}));
-            });
+                db.collection('chatbot').aggregate([{
+                    $project: {
+                        "_id" : 0,
+                        "conversation.messages": [{
+                            $arrayElemAt: [ "$conversation.messages", -1 ]
+                        }],
+                        "members" : 1,
+                        'conversation.uid': 1
+                    }
+                },            {
+                    $match: {
+                        $or: arr
+                    } }
+                ]).toArray(function(err, result) {
+                    res.send(JSON.stringify({"state" : "success", "lastMessages" : result}));
+                });
+                
+            } else {
+                res.send(JSON.stringify({"state" : "error", "message" : "bad token"}));
+            }
             client.close();
         });
     });
@@ -80,25 +84,31 @@ app.post('/conversation/all/doctor', function (req, res) {
         var arr = [];
         db.collection('doctors').findOne(query, function (err, result) {
             console.log(result);
-            for (let i = 0; i < result.conversations.length; i++) {
-                arr.push({ "conversation.uid" : result.conversations[i] }) ;
-            }
-            db.collection('chatbot').aggregate([{
-                $project: {
-                    "_id" : 0,
-                    "conversation.messages": [{
-                        $arrayElemAt: [ "$conversation.messages", -1 ]
-                    }],
-                    "members" : 1,
-                    'conversation.uid': 1
+            if (result != null) {
+
+                for (let i = 0; i < result.conversations.length; i++) {
+                    arr.push({"conversation.uid": result.conversations[i]});
                 }
-            },            {
-                $match: {
-                    $or: arr
-                } }
-            ]).toArray(function(err, result) {
-                res.send(JSON.stringify({"state" : "success", "lastMessages" : result}));
-            });
+                db.collection('chatbot').aggregate([{
+                    $project: {
+                        "_id": 0,
+                        "conversation.messages": [{
+                            $arrayElemAt: ["$conversation.messages", -1]
+                        }],
+                        "members": 1,
+                        'conversation.uid': 1
+                    }
+                }, {
+                    $match: {
+                        $or: arr
+                    }
+                }
+                ]).toArray(function (err, result) {
+                    res.send(JSON.stringify({"state": "success", "lastMessages": result}));
+                });
+            } else {
+                res.send(JSON.stringify({"state" : "error", "message" : "bad token"}));
+            }
             client.close();
         })
     });
