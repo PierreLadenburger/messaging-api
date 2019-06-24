@@ -56,7 +56,8 @@ app.post('/conversation/all/user', function (req, res) {
                             $arrayElemAt: [ "$conversation.messages", -1 ]
                         }],
                         "members" : 1,
-                        'conversation.uid': 1
+                        'conversation.uid': 1,
+                        'conversation.unread' : { $size : {$filter : {"input" : "$conversation.messages", "cond" : { "$and" : [{ "$eq" :  [ "$$this.read", false ]},{ "$ne" :  [ "$$this.member", result._id ]}]}}}}
                     }
                 },            {
                     $match: {
@@ -96,7 +97,8 @@ app.post('/conversation/all/doctor', function (req, res) {
                             $arrayElemAt: ["$conversation.messages", -1]
                         }],
                         "members": 1,
-                        'conversation.uid': 1
+                        'conversation.uid': 1,
+                        'conversation.unread' : { $size : {$filter : {"input" : "$conversation.messages", "cond" : { "$and" : [{ "$eq" :  [ "$$this.read", false ]},{ "$ne" :  [ "$$this.member", result._id ]}]}}}}
                     }
                 }, {
                     $match: {
@@ -268,6 +270,5 @@ app.post('/updateMessages', function (req, res) {
         });
     })
 });
-
 
 app.listen(8082);
