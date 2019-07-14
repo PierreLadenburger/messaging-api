@@ -6,6 +6,7 @@ var app = express();
 var swaggerUi = require('swagger-ui-express');
 var swaggerDocument = require('./swagger.json');
 const {ObjectId} = require('mongodb'); // or ObjectID
+var apn = require('apn');
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -13,7 +14,19 @@ app.use(cors());
 const url='mongodb://homedocRW:homedocRW@51.38.234.54:27017/homedoc';
 const dbName = 'homedoc';
 
+var options = {
+    token: {
+        key: "path/to/APNsAuthKey_XXXXXXXXXX.p8",
+        keyId: "key-id",
+        teamId: "developer-team-id"
+    },
+    production: false
+};
+
+var apnProvider = new apn.Provider(options);
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 
 // A AMELIORER POTENTIELLEMENT AVEC READ = true uniquement pour les messages d'un utilisateur
 app.get('/conversation/:uid', function (req, res) {
