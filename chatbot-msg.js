@@ -5,8 +5,8 @@ var cors = require('cors');
 var app = express();
 var swaggerUi = require('swagger-ui-express');
 var swaggerDocument = require('./swagger.json');
+//import PushNotifications from 'node-pushnotifications';
 const {ObjectId} = require('mongodb'); // or ObjectID
-var apn = require('apn');
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -14,16 +14,22 @@ app.use(cors());
 const url='mongodb://homedocRW:homedocRW@51.38.234.54:27017/homedoc';
 const dbName = 'homedoc';
 
-var options = {
-    token: {
-        key: "path/to/APNsAuthKey_XXXXXXXXXX.p8",
-        keyId: "key-id",
-        teamId: "developer-team-id"
+/*const settings = {
+    gcm: {
+        id: null,
+        phonegap: false, // phonegap compatibility mode, see below (defaults to false)
     },
-    production: false
+    apn: {
+        token: {
+            key: './certs/key.p8', // optionally: fs.readFileSync('./certs/key.p8')
+            keyId: 'ABCD',
+            teamId: 'EFGH',
+        },
+        production: false // true for APN production environment, false for APN sandbox environment,
+    },
+    isAlwaysUseFCM: false, // true all messages will be sent through node-gcm (which actually uses FCM)
 };
-
-var apnProvider = new apn.Provider(options);
+const push = new PushNotifications(settings);*/
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
@@ -57,34 +63,43 @@ app.post('/conversation/all/user', function (req, res) {
             'token': req.body.token
         };
         var arr = [];
-        db.collection('users').findOne(query, function (err, result) {
-            if (result != null) {
-                for (let i = 0; i < result.conversations.length; i++) {
-                    arr.push({ "conversation.uid" : result.conversations[i] }) ;
-                }
-                db.collection('chatbot').aggregate([{
-                    $project: {
-                        "_id" : 0,
-                        "conversation.messages": [{
-                            $arrayElemAt: [ "$conversation.messages", -1 ]
-                        }],
-                        "members" : 1,
-                        'conversation.uid': 1,
-                        'conversation.unread' : { $size : {$filter : {"input" : "$conversation.messages", "cond" : { "$and" : [{ "$eq" :  [ "$$this.read", false ]},{ "$ne" :  [ "$$this.member", result._id ]}]}}}}
-                    }
-                },            {
-                    $match: {
-                        $or: arr
-                    } }
-                ]).toArray(function(err, result) {
-                    res.send(JSON.stringify({"state" : "success", "lastMessages" : result}));
-                });
-                
-            } else {
-                res.send(JSON.stringify({"state" : "error", "message" : "bad token"}));
-            }
-            client.close();
-        });
+        db.collection('users_token').findOne(query, function (err, result) {
+
+             if (result) {
+                 var user = {
+                     _id : ObjectId(result.user_id)
+                 };
+                 db.collection('users').findOne(user, function (err, result) {
+                     if (result != null) {
+                         for (let i = 0; i < result.conversations.length; i++) {
+                             arr.push({ "conversation.uid" : result.conversations[i] }) ;
+                         }
+
+                         db.collection('chatbot').aggregate([{
+                             $project: {
+                                 "_id" : 0,
+                                 "conversation.messages": [{
+                                     $arrayElemAt: [ "$conversation.messages", -1 ]
+                                 }],
+                                 "members" : 1,
+                                 'conversation.uid': 1,
+                                 'conversation.unread' : { $size : {$filter : {"input" : "$conversation.messages", "cond" : { "$and" : [{ "$eq" :  [ "$$this.read", false ]},{ "$ne" :  [ "$$this.member", result._id ]}]}}}}
+                             }
+                         },            {
+                             $match: {
+                                 $or: arr
+                             } }
+                         ]).toArray(function(err, result) {
+                             res.send(JSON.stringify({"state" : "success", "lastMessages" : result}));
+                             client.close();
+                         });
+                     }
+                 });
+             } else {
+                 res.send(JSON.stringify({"state": "error", "message": "bad token"}));
+             }
+         });
+
     });
 });
 
@@ -240,7 +255,8 @@ app.post('/message', function (req, res) {
     }
 });
 
-app.post('/retrieveMessages', function (req, res) {
+// A TESTER ENCORE
+/*app.post('/retrieveMessages', function (req, res) {
     MongoClient.connect(url, function(err, client) {
         const db = client.db(dbName);
         res.setHeader('Content-Type', 'application/json; charset=UTF-8');
@@ -262,6 +278,31 @@ app.post('/retrieveMessages', function (req, res) {
             res.send(JSON.stringify({"state" : "success", "lastMessages" : result}));
         });
         client.close();
+    })
+});*/
+
+app.post('/retrieveMessages', function (req, res) {
+    MongoClient.connect(url, function(err, client) {
+        const db = client.db(dbName);
+        res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+        var query = {
+            'conversation.uid' : req.body.uid
+        };
+        db.collection('chatbot').findOne(query, function(err, result) {
+            if (result) {
+                var messages = [];
+                for (var i = 0; i < result.conversation.messages.length; i++) {
+                    if (result.conversation.messages[i].read === false && result.conversation.messages[i].member.toString() !== req.body.member) {
+                        messages.push(result.conversation.messages[i]);
+                    }
+                }
+                res.send(JSON.stringify({"members" : result.members, "conversation" : {"uid" : req.params.uid, "messages" : messages}}));
+
+            } else {
+                res.send(JSON.stringify({"state": "error"}));
+            }
+            client.close();
+        });
     })
 });
 
