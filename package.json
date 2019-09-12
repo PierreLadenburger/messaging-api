@@ -17,7 +17,7 @@
     "cors": "^2.8.5",
     "express": "^4.16.4",
     "mongodb": "^3.2.3",
-    "node-pushnotifications": "file:node_modules/node-pushnotifications",
+    "node-pushnotifications": "^1.1.12",
     "swagger-ui-express": "^4.0.2"
   }
 }
