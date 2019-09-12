@@ -166,49 +166,55 @@ app.delete('/conversation', function (req, res) {
 app.post('/conversation', function (req, res) {
     MongoClient.connect(url, function (err, client) {
         const db = client.db(dbName);
-        var checkUid = {
-            'conversations' : req.body.conversation.uid,
-            token: req.body.token
+        var query = {
+            'token': req.body.token
         };
-        db.collection('users').findOne(checkUid, function (err, result) {
+        db.collection('users_token').findOne(query, function (err, result) {
+            var checkUid = {
+                'conversations' : req.body.conversation.uid
+            };
             if (result) {
-                res.send(JSON.stringify({"state": "error", "message": "uid already used"}));
-            } else {
-                var members = [
-                    ObjectId(req.body.members[0]),
-                    ObjectId(req.body.members[1]),
-                ];
-                var body = {
-                    members: members,
-                    conversation: {
-                        uid : req.body.conversation.uid,
-                        messages: []
-                    }
-                };
-                db.collection('chatbot').insertOne(body, function (err, result) {
+                db.collection('users').findOne(checkUid, function (err, result) {
                     if (result) {
-                        res.send(JSON.stringify({"state": "success"}));
+                        res.send(JSON.stringify({"state": "error", "message": "uid already used"}));
                     } else {
-                        res.send(JSON.stringify({"state": "error", "message": "insertion failed"}));
+                        var members = [
+                            ObjectId(req.body.members[0]),
+                            ObjectId(req.body.members[1]),
+                        ];
+                        var body = {
+                            members: members,
+                            conversation: {
+                                uid : req.body.conversation.uid,
+                                messages: []
+                            }
+                        };
+                        db.collection('chatbot').insertOne(body, function (err, result) {
+                            if (result) {
+                                res.send(JSON.stringify({"state": "success"}));
+                            } else {
+                                res.send(JSON.stringify({"state": "error", "message": "insertion failed"}));
+                            }
+                            client.close();
+                        });
+                        var queryUser = {
+                            _id: ObjectId(req.body.members[1])
+                        };
+                        db.collection('users').findOneAndUpdate(queryUser, {$push: {"conversations" : req.body.conversation.uid}}, function (err, result) {
+                            client.close();
+                        });
+                        var queryDoctor = {
+                            _id: ObjectId(req.body.members[0])
+                        };
+                        db.collection('doctors').findOneAndUpdate(queryDoctor, {$push: {"conversations" : req.body.conversation.uid}}, function (err, result) {
+                            client.close();
+                        });
                     }
-                    client.close();
                 });
-                var queryUser = {
-                    token: req.body.token,
-                    _id: ObjectId(req.body.members[1])
-                };
-                db.collection('users').findOneAndUpdate(queryUser, {$push: {"conversations" : req.body.conversation.uid}}, function (err, result) {
-                    client.close();
-                });
-                var queryDoctor = {
-                    _id: ObjectId(req.body.members[0])
-                };
-                db.collection('doctors').findOneAndUpdate(queryDoctor, {$push: {"conversations" : req.body.conversation.uid}}, function (err, result) {
-                    client.close();
-                });
+            } else {
+                res.send(JSON.stringify({"state": "error", "message": "bad token"}));
             }
         });
-
     });
 });
 
@@ -220,8 +226,9 @@ app.post('/message', function (req, res) {
             const db = client.db(dbName);
 
             res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+            var message = null;
             if (req.body.message.member !== "000000000000000000000001") {
-                var message = {
+                message = {
                     "type" : req.body.message.type,
                     "member" : ObjectId(req.body.message.member),
                     "text" : req.body.message.text,
@@ -229,7 +236,7 @@ app.post('/message', function (req, res) {
                     "read" : false
                 };
             } else  {
-                var message = {
+                message = {
                     "type" : req.body.message.type,
                     "member" : ObjectId(req.body.message.member),
                     "text" : req.body.message.text,
