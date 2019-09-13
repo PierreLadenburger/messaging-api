@@ -148,18 +148,28 @@ app.delete('/conversation', function (req, res) {
         var query = {
             token: req.body.token
         };
-        db.collection('users').findOneAndUpdate(query, {$pull: {"conversations" : req.body.uid}}, function (err, result) {
-            if (result.value != null) {
-                res.send(JSON.stringify({"state": "success"}));
-                client.close();
+
+        db.collection('users_token').findOne(query, function (err, result) {
+            if (result) {
+                var user = {
+                    _id : ObjectId(result.user_id)
+                };
+                db.collection('users').findOneAndUpdate(user, {$pull: {"conversations" : req.body.uid}}, function (err, result) {
+                    if (result.value != null) {
+                        res.send(JSON.stringify({"state": "success"}));
+                        client.close();
+                    }
+                });
+                db.collection('doctors').findOneAndUpdate(user, {$pull: {"conversations" : req.body.uid}}, function (err, result) {
+                    if (result.value != null) {
+                        res.send(JSON.stringify({"state": "success"}));
+                        client.close();
+                    }
+                });
             }
+            client.close();
         });
-        db.collection('doctors').findOneAndUpdate(query, {$pull: {"conversations" : req.body.uid}}, function (err, result) {
-            if (result.value != null) {
-                res.send(JSON.stringify({"state": "success"}));
-                client.close();
-            }
-        });
+
     });
 });
 
