@@ -61,7 +61,6 @@ app.post('/conversation/all/user', function (req, res) {
         };
         var arr = [];
         db.collection('users_token').findOne(query, function (err, result) {
-
              if (result) {
                  var user = {
                      _id : ObjectId(result.user_id)
@@ -96,7 +95,6 @@ app.post('/conversation/all/user', function (req, res) {
                  res.send(JSON.stringify({"state": "error", "message": "bad token"}));
              }
          });
-
     });
 });
 
@@ -108,36 +106,43 @@ app.post('/conversation/all/doctor', function (req, res) {
             'token': req.body.token
         };
         var arr = [];
-        db.collection('doctors').findOne(query, function (err, result) {
-            console.log(result);
-            if (result != null) {
-
-                for (let i = 0; i < result.conversations.length; i++) {
-                    arr.push({"conversation.uid": result.conversations[i]});
-                }
-                db.collection('chatbot').aggregate([{
-                    $project: {
-                        "_id": 0,
-                        "conversation.messages": [{
-                            $arrayElemAt: ["$conversation.messages", -1]
-                        }],
-                        "members": 1,
-                        'conversation.uid': 1,
-                        'conversation.unread' : { $size : {$filter : {"input" : "$conversation.messages", "cond" : { "$and" : [{ "$eq" :  [ "$$this.read", false ]},{ "$ne" :  [ "$$this.member", result._id ]}]}}}}
+        db.collection('users_token').findOne(query, function (err, result) {
+            if (result) {
+                var doctor = {
+                    _id : ObjectId(result.user_id)
+                };
+                db.collection('doctors').findOne(doctor, function (err, result) {
+                    if (result != null) {
+                        for (let i = 0; i < result.conversations.length; i++) {
+                            arr.push({"conversation.uid": result.conversations[i]});
+                        }
+                        db.collection('chatbot').aggregate([{
+                            $project: {
+                                "_id": 0,
+                                "conversation.messages": [{
+                                    $arrayElemAt: ["$conversation.messages", -1]
+                                }],
+                                "members": 1,
+                                'conversation.uid': 1,
+                                'conversation.unread' : { $size : {$filter : {"input" : "$conversation.messages", "cond" : { "$and" : [{ "$eq" :  [ "$$this.read", false ]},{ "$ne" :  [ "$$this.member", result._id ]}]}}}}
+                            }
+                        }, {
+                            $match: {
+                                $or: arr
+                            }
+                        }
+                        ]).toArray(function (err, result) {
+                            res.send(JSON.stringify({"state": "success", "lastMessages": result}));
+                            client.close();
+                        });
+                    } else {
+                        res.send(JSON.stringify({"state" : "error", "message" : "bad token"}));
                     }
-                }, {
-                    $match: {
-                        $or: arr
-                    }
-                }
-                ]).toArray(function (err, result) {
-                    res.send(JSON.stringify({"state": "success", "lastMessages": result}));
                 });
             } else {
-                res.send(JSON.stringify({"state" : "error", "message" : "bad token"}));
+                res.send(JSON.stringify({"state": "error", "message": "bad token"}));
             }
-            client.close();
-        })
+        });
     });
 });
 
@@ -425,5 +430,18 @@ app.post('/updateMessages', function (req, res) {
         });
     })
 });
+
+app.delete('/conversations/all', function (req, res) {
+    MongoClient.connect(url, function(err, client) {
+        const db = client.db(dbName);
+        res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+        db.collection("users").updateMany({}, {$unset : {"conversations" : null }});
+        db.collection("doctors").updateMany({}, {$unset : {"conversations" : null}});
+        db.collection("chatbot").remove({});
+        res.send(JSON.stringify({"state": "success"}))
+    });
+});
+
+
 
 app.listen(8082);
