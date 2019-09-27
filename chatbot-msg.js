@@ -16,13 +16,17 @@ const dbName = 'homedoc';
 var  PushNotifications = require('node-pushnotifications');
 
 const settings = {
+    gcm: {
+        id: 'AAAAZAn6WAE:APA91bGFypOM6ggr69iVsxjMrYi_YxFvelnaf4-5W0uXZUvza3l3zLKQi7nj4cf1lZwOP9wyWA_Hlju3uUzkVRDi_AKGq--ETMunvkotGfmbG4E3--WAx1ZMelUEuFL438KRV-nrxfWJ',
+        phonegap: false
+    },
      apn: {
         token: {
             key: './certs/AuthKey_8QTXRZ565P.p8', // optionally: fs.readFileSync('./certs/AuthKey_8QTXRZ565P.p8')
             keyId: '8QTXRZ565P',
             teamId: 'VHVJHEFMDW',
         },
-        production: false // true for APN production environment, false for APN sandbox environment,
+        production: true // true for APN production environment, false for APN sandbox environment,
     },
     isAlwaysUseFCM: false, // true all messages will be sent through node-gcm (which actually uses FCM)
 };
@@ -278,9 +282,9 @@ app.post('/message', function (req, res) {
                         if (result) {
 
                             const data = {
-                                title: 'New push notification', // REQUIRED for Android
+                                title: 'Nouveau message sur Home’Doc', // REQUIRED for Android
                                 topic: 'com.maximekillinger.apphomedoc', // REQUIRED for iOS (apn and gcm)
-                                body: 'Powered by AppFeel',
+                                body: req.body.message.text,
                                 custom: {
                                     sender: 'AppFeel',
                                 },
@@ -298,9 +302,7 @@ app.post('/message', function (req, res) {
                                 color: '', // gcm for android
                                 clickAction: '', // gcm for android. In ios, category will be used if not supplied
                                 locKey: '', // gcm, apn
-                                locArgs: '', // gcm, apn
                                 titleLocKey: '', // gcm, apn
-                                titleLocArgs: '', // gcm, apn
                                 retries: 1, // gcm, apn
                                 encoding: '', // apn
                                 badge: 2, // gcm for ios, apn
