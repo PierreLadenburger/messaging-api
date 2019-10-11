@@ -6,6 +6,8 @@ var app = express();
 var swaggerUi = require('swagger-ui-express');
 var swaggerDocument = require('./swagger.json');
 const {ObjectId} = require('mongodb'); // or ObjectID
+const {AccessToken} = require('agora-access-token');
+const {Token, Priviledges} = AccessToken;
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -34,7 +36,18 @@ const push = new PushNotifications(settings);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-
+app.post('/visio-conference', function (req, res) {
+    res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+    var appID = "60b4add14d614e10b2638d40e147f0f7";
+    var appCertificate = "77b235db27294fa0abecb7b28d06bd57";
+    var channel = req.body.channel; // Pass as parameter of the api
+    var uid = req.body.uid; // Pass as parameter of the api
+    var expireTimestamp = 30;
+    var key = new Token(appID, appCertificate, channel, uid);
+    key.addPriviledge(Priviledges.kJoinChannel, expireTimestamp);
+    var token = key.build();
+    res.send(JSON.stringify({"token": token}));
+});
 // A AMELIORER POTENTIELLEMENT AVEC READ = true uniquement pour les messages d'un utilisateur
 app.get('/conversation/:uid', function (req, res) {
     MongoClient.connect(url, function(err, client) {
