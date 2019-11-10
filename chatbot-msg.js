@@ -300,6 +300,7 @@ app.post('/message', function (req, res) {
                                 body: req.body.message.text,
                                 custom: {
                                     sender: 'AppFeel',
+                                    conversationUID: req.body.uid
                                 },
                                 priority: 'high', // gcm, apn. Supported values are 'high' or 'normal' (gcm). Will be translated to 10 and 5 for apn. Defaults to 'high'
                                 collapseKey: '', // gcm for android, used as collapseId in apn
@@ -322,7 +323,8 @@ app.post('/message', function (req, res) {
                                 sound: 'ping.aiff', // gcm, apn
                                 android_channel_id: '', // gcm - Android Channel ID
                                 alert: { // apn, will take precedence over title and body
-                                    title: 'Nouveau message sur Home’Doc',
+                                    title: 'Home’Doc',
+                                    subtitle: 'Nouveau message de ...',
                                     body: req.body.message.text
                                     // details: https://github.com/node-apn/node-apn/blob/master/doc/notification.markdown#convenience-setters
                                 },
