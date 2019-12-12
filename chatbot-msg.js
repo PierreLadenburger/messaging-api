@@ -84,28 +84,31 @@ app.post('/conversation/all/user', function (req, res) {
                  };
                  db.collection('users').findOne(user, function (err, result) {
                      if (result != null) {
-                         for (let i = 0; i < result.conversations.length; i++) {
-                             arr.push({ "conversation.uid" : result.conversations[i] }) ;
+                         if (result.conversations != null) {
+                             for (let i = 0; i < result.conversations.length; i++) {
+                                 arr.push({ "conversation.uid" : result.conversations[i] }) ;
+                             }
+
+                             db.collection('chatbot').aggregate([{
+                                 $project: {
+                                     "_id" : 0,
+                                     "conversation.messages": [{
+                                         $arrayElemAt: [ "$conversation.messages", -1 ]
+                                     }],
+                                     "members" : 1,
+                                     'conversation.uid': 1,
+                                     'conversation.unread' : { $size : {$filter : {"input" : "$conversation.messages", "cond" : { "$and" : [{ "$eq" :  [ "$$this.read", false ]},{ "$ne" :  [ "$$this.member", result._id ]}]}}}}
+                                 }
+                             },            {
+                                 $match: {
+                                     $or: arr
+                                 } }
+                             ]).toArray(function(err, result) {
+                                 res.send(JSON.stringify({"state" : "success", "lastMessages" : result}));
+                                 client.close();
+                             });
                          }
 
-                         db.collection('chatbot').aggregate([{
-                             $project: {
-                                 "_id" : 0,
-                                 "conversation.messages": [{
-                                     $arrayElemAt: [ "$conversation.messages", -1 ]
-                                 }],
-                                 "members" : 1,
-                                 'conversation.uid': 1,
-                                 'conversation.unread' : { $size : {$filter : {"input" : "$conversation.messages", "cond" : { "$and" : [{ "$eq" :  [ "$$this.read", false ]},{ "$ne" :  [ "$$this.member", result._id ]}]}}}}
-                             }
-                         },            {
-                             $match: {
-                                 $or: arr
-                             } }
-                         ]).toArray(function(err, result) {
-                             res.send(JSON.stringify({"state" : "success", "lastMessages" : result}));
-                             client.close();
-                         });
                      }
                  });
              } else {
@@ -130,28 +133,30 @@ app.post('/conversation/all/doctor', function (req, res) {
                 };
                 db.collection('doctors').findOne(doctor, function (err, result) {
                     if (result != null) {
-                        for (let i = 0; i < result.conversations.length; i++) {
-                            arr.push({"conversation.uid": result.conversations[i]});
-                        }
-                        db.collection('chatbot').aggregate([{
-                            $project: {
-                                "_id": 0,
-                                "conversation.messages": [{
-                                    $arrayElemAt: ["$conversation.messages", -1]
-                                }],
-                                "members": 1,
-                                'conversation.uid': 1,
-                                'conversation.unread' : { $size : {$filter : {"input" : "$conversation.messages", "cond" : { "$and" : [{ "$eq" :  [ "$$this.read", false ]},{ "$ne" :  [ "$$this.member", result._id ]}]}}}}
+                        if (result.conversations !=  null) {
+                            for (let i = 0; i < result.conversations.length; i++) {
+                                arr.push({"conversation.uid": result.conversations[i]});
                             }
-                        }, {
-                            $match: {
-                                $or: arr
+                            db.collection('chatbot').aggregate([{
+                                $project: {
+                                    "_id": 0,
+                                    "conversation.messages": [{
+                                        $arrayElemAt: ["$conversation.messages", -1]
+                                    }],
+                                    "members": 1,
+                                    'conversation.uid': 1,
+                                    'conversation.unread' : { $size : {$filter : {"input" : "$conversation.messages", "cond" : { "$and" : [{ "$eq" :  [ "$$this.read", false ]},{ "$ne" :  [ "$$this.member", result._id ]}]}}}}
+                                }
+                            }, {
+                                $match: {
+                                    $or: arr
+                                }
                             }
+                            ]).toArray(function (err, result) {
+                                res.send(JSON.stringify({"state": "success", "lastMessages": result}));
+                                client.close();
+                            });
                         }
-                        ]).toArray(function (err, result) {
-                            res.send(JSON.stringify({"state": "success", "lastMessages": result}));
-                            client.close();
-                        });
                     } else {
                         res.send(JSON.stringify({"state" : "error", "message" : "bad token"}));
                     }
@@ -324,7 +329,7 @@ app.post('/message', function (req, res) {
                                 android_channel_id: '', // gcm - Android Channel ID
                                 alert: { // apn, will take precedence over title and body
                                     title: 'Home’Doc',
-                                    subtitle: 'Nouveau message de ...',
+                                    subtitle: 'Nouveau message',
                                     body: req.body.message.text
                                     // details: https://github.com/node-apn/node-apn/blob/master/doc/notification.markdown#convenience-setters
                                 },
